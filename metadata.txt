@@ -1,0 +1,12 @@
+[general]
+name=GeoHub
+description=GeoHub plugin for conecting with repositories
+about=This plugin allows to communicate with GeoHub repositories
+version=1.0
+qgisMinimumVersion=3.0
+author=Vitor Muniz
+email=vitorfmuniz@gmail.com
+repository=https://github.com/kairosgeo/geohub-qgis-plugin
+category=Web
+experimental=False
+deprecated=False
