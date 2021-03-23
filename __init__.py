@@ -1,21 +1,25 @@
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Copyright (C) 2021 Vitor Muniz
-#-----------------------------------------------------------
+# -----------------------------------------------------------
 # Licensed under the terms of GNU GPL 3
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#---------------------------------------------------------------------
+# ---------------------------------------------------------------------
 
-from PyQt5.QtWidgets import QAction, QMessageBox
-from PyQt5.QtNetwork import QNetworkAccessManager, QNetworkRequest, QNetworkReply
-from PyQt5.QtCore import QUrl
-import sys, json
+import sys
+import json
+from qgis.core import QgsNetworkAccessManager, Qgis
+from PyQt5.QtWidgets import QAction
+from PyQt5.QtNetwork import QNetworkRequest, QNetworkReply
+from PyQt5.QtCore import QUrl, QByteArray
+
 
 def classFactory(iface):
     return GeoHubPlugin(iface)
+
 
 class GeoHubPlugin:
     def __init__(self, iface):
@@ -32,25 +36,25 @@ class GeoHubPlugin:
         del self.action
 
     def run(self):
-        self.__geo_hub_api.get_weather(self.__handle__response)        
+        self.__handle__response(self.__geo_hub_api.get_weather())
 
     def __handle__response(self, reply):
         er = reply.error()
         if er == QNetworkReply.NoError:
-            bytes_string = reply.readAll()
-            json_ar = json.loads(str(bytes_string, 'utf-8'))
-            QMessageBox.information(None, 'GeoHubPlugin', str(json_ar))
+            response_json = json.loads(bytes(reply.content()))
+            self.iface.messageBar().pushMessage(
+                "Sucesso", str(response_json), level=Qgis.Success)
         else:
-            QMessageBox.information(None, 'GeoHubPlugin', reply.errorString())
+            self.iface.messageBar().pushMessage(
+                "Erro", reply.errorString(), level=Qgis.Critical)
+
 
 class GeoHubApi:
     def __init__(self, url):
         self.__baseUrl = url
-        self.__manager = QNetworkAccessManager()
 
-    def get_weather(self, handler):        
-        request = QNetworkRequest(QUrl(f"{self.__baseUrl}/WeatherForecast"))
-        self.__manager.finished.connect(handler)
-        self.__manager.get(request)
-
-        
+    def get_weather(self):
+        request = QNetworkRequest(QUrl(f"{self.__baseUrl}/repositories"))
+        request.setHeader(QNetworkRequest.ContentTypeHeader,
+                          QByteArray(b'application/json'))
+        return QgsNetworkAccessManager.instance().blockingGet(request)
